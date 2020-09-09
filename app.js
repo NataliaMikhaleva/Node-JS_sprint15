@@ -1,4 +1,5 @@
 const { celebrate, Joi, errors } = require('celebrate');
+require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
@@ -27,7 +28,12 @@ const { requestLogger, errorLogger } = require('./middlewares/Logger');
 
 app.use(requestLogger);
 
-app.post('/signin', login);
+app.post('/signin', app.get('/crash-test', () => {
+  setTimeout(() => {
+    throw new Error('Сервер сейчас упадёт');
+  }, 0);
+}), login);
+
 app.post('/signup', celebrate({
   body: Joi.object().keys({
     email: Joi.string().required(),
@@ -36,7 +42,12 @@ app.post('/signup', celebrate({
     about: Joi.string().required().min(2).max(30),
     avatar: Joi.string().required(),
   }),
+}), app.get('/crash-test', () => {
+  setTimeout(() => {
+    throw new Error('Сервер сейчас упадёт');
+  }, 0);
 }), createUser);
+
 app.use('/users', auth, users);
 app.use('/cards', auth, cards);
 app.use((req, res, next) => {
