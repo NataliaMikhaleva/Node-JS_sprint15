@@ -21,8 +21,11 @@ module.exports.createCard = ((req, res, next) => {
     .then((card) => {
       res.send({ data: card });
     })
-    .catch(() => {
-      next(new BadRequest('Невалидные данные'));
+    .catch((err) => {
+      if (err.name === 'ValidationError') {
+        next(new BadRequest('Невалидные данные'));
+      }
+      next();
     });
 });
 
@@ -32,6 +35,8 @@ module.exports.deleteCard = ((req, res, next) => {
       if (String(card.owner) !== req.user._id) {
         throw new ForbiddenError('Вы не можете удалять карточки других пользователей');
       }
+    })
+    .then((card) => {
       card.remove();
       res.send({ data: card });
     })

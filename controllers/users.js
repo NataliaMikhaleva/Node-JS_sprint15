@@ -1,4 +1,6 @@
 const bcrypt = require('bcryptjs');
+
+const { NODE_ENV, JWT_SECRET } = process.env;
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
 const NotFoundError = require('../errors/notfound-err');
@@ -54,10 +56,12 @@ module.exports.createUser = ((req, res, next) => {
       });
     })
     .catch((err) => {
-      if (err.code === 11000) {
+      if (err.code === 11000 && err.name === 'MongoError') {
         next(new ConflictError('Такой пользователь уже существует'));
+      } else if (err.name === 'ValidationError') {
+        next(new NotFoundError('Невалидные данные'));
       }
-      next(new NotFoundError('Невалидные данные'));
+      next();
     });
 });
 
@@ -65,7 +69,7 @@ module.exports.login = ((req, res, next) => {
   const { email, password } = req.body;
   return User.findUserByCredentials(email, password)
     .then((user) => {
-      const token = jwt.sign({ _id: user._id }, 'some-secret-key', { expiresIn: '7d' });
+      const token = jwt.sign({ _id: user._id }, NODE_ENV === 'production' ? JWT_SECRET : 'secret-key', { expiresIn: '7d' });
       res.send({ token });
     })
     .catch(next);
