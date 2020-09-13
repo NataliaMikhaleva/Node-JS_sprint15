@@ -12,17 +12,19 @@ const validatorURL = (link) => {
   return link;
 };
 
-router.get('/', (getCards));
-router.post('/', (createCard));
+router.get('/', getCards);
 router.post('/',
   celebrate({
     body: Joi.object().keys({
       name: Joi.string().required().min(2).max(30),
       link: Joi.string().required().min(2).custom(validatorURL),
-      owner: Joi.objectId().required(),
     }),
-  }), (createCard));
+  }), createCard);
 
-router.delete('/:id', (deleteCard));
+router.delete('/:id', celebrate({
+  params: Joi.object().keys({
+    id: Joi.objectId(),
+  }),
+}), deleteCard);
 
 module.exports = router;

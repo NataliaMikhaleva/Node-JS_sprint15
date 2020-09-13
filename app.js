@@ -7,6 +7,7 @@ const bodyParser = require('body-parser');
 const users = require('./routes/users');
 const cards = require('./routes/cards');
 const BadRequest = require('./errors/badrequest-err');
+const NotFoundError = require('./errors/notfound-err');
 const { createUser, login } = require('./controllers/users');
 
 const validatorURL = (avatar) => {
@@ -41,7 +42,12 @@ app.get('/crash-test', () => {
   }, 0);
 });
 
-app.post('/signin', login);
+app.post('/signin', celebrate({
+  body: Joi.object().keys({
+    email: Joi.string().required().email(),
+    password: Joi.string().required().min(8),
+  }),
+}), login);
 
 app.post('/signup', celebrate({
   body: Joi.object().keys({
@@ -51,13 +57,13 @@ app.post('/signup', celebrate({
     about: Joi.string().required().min(2).max(30),
     avatar: Joi.string().required().custom(validatorURL),
   }),
-}), (createUser));
+}), createUser);
 
 app.use('/users', auth, users);
 app.use('/cards', auth, cards);
 
 app.use((req, res, next) => {
-  next(new BadRequest('Запрашиваемый ресурс не найден'));
+  next(new NotFoundError('Запрашиваемый ресурс не найден'));
 });
 
 app.use(errorLogger);

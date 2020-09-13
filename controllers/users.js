@@ -20,11 +20,12 @@ module.exports.getUsers = ((req, res, next) => {
 
 module.exports.getUserId = ((req, res, next) => {
   User.findById(req.params.id)
+    .orFail(() => {
+      throw new NotFoundError('Нет такого пользователя');
+    })
     .then((user) => {
-      if (!user.length) {
-        throw new NotFoundError('Нет такого пользователя');
-      }
       res.send({ data: user });
+      // return;
     })
     .catch(next);
 });
@@ -60,8 +61,9 @@ module.exports.createUser = ((req, res, next) => {
         next(new ConflictError('Такой пользователь уже существует'));
       } else if (err.name === 'ValidationError') {
         next(new NotFoundError('Невалидные данные'));
+        return;
       }
-      next();
+      next(err);
     });
 });
 
@@ -72,5 +74,8 @@ module.exports.login = ((req, res, next) => {
       const token = jwt.sign({ _id: user._id }, NODE_ENV === 'production' ? JWT_SECRET : 'secret-key', { expiresIn: '7d' });
       res.send({ token });
     })
-    .catch(next);
+    .catch((err) => {
+      res.status(401).send({ message: err.message });
+      next(err);
+    });
 });
