@@ -25,7 +25,6 @@ module.exports.getUserId = ((req, res, next) => {
     })
     .then((user) => {
       res.send({ data: user });
-      // return;
     })
     .catch(next);
 });
@@ -74,8 +73,5 @@ module.exports.login = ((req, res, next) => {
       const token = jwt.sign({ _id: user._id }, NODE_ENV === 'production' ? JWT_SECRET : 'secret-key', { expiresIn: '7d' });
       res.send({ token });
     })
-    .catch((err) => {
-      res.status(401).send({ message: err.message });
-      next(err);
-    });
+    .catch(next);
 });

@@ -79,7 +79,6 @@ app.use((err, req, res, next) => {
   });
 });
 
-console.log(PORT);
 app.listen(PORT, () => {
   console.log(`Сервер запущен, порт: ${PORT}.`);
   console.log(BASE_PATH);
