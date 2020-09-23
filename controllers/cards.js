@@ -1,42 +1,46 @@
 const Card = require('../models/card');
+const NotFoundError = require('../errors/notfound-err');
+const ForbiddenError = require('../errors/forbidden-err');
 
-module.exports.getCards = ((req, res) => {
+module.exports.getCards = ((req, res, next) => {
   Card.find({})
     .then((cards) => {
       if (!cards.length) {
-        res.status(404).send({ message: 'Карточки отсутствуют' });
-        return;
+        throw new NotFoundError('Карточки отсутствуют');
       }
       res.send({ data: cards });
     })
-    .catch(() => {
-      res.status(500).send({ message: 'Запрашиваемый ресурс не найден' });
-    });
+    .catch(next);
 });
 
-module.exports.createCard = ((req, res) => {
+module.exports.createCard = ((req, res, next) => {
   const owner = req.user._id;
   const { name, link } = req.body;
+
   Card.create({ name, link, owner })
     .then((card) => {
       res.send({ data: card });
     })
-    .catch(() => {
-      res.status(404).send({ message: 'Невалидные данные' });
+    .catch((err) => {
+      if (err.name === 'ValidationError') {
+        next(new NotFoundError('Невалидные данные'));
+        return;
+      }
+      next(err);
     });
 });
 
-module.exports.deleteCard = ((req, res) => {
-  Card.findById(req.body._id)
+module.exports.deleteCard = ((req, res, next) => {
+  Card.findById(req.params.id)
     .then((card) => {
-      if (String(card.owner) !== req.user._id) {
-        res.status(403).send({ message: 'Вы не можете удалять карточки других пользователей' });
-        return;
+      if (card === null) {
+        throw new NotFoundError('Карточка отсутствует');
       }
-      card.remove();
-      res.send({ data: card });
+      if (String(card.owner) !== req.user._id) {
+        throw new ForbiddenError('Вы не можете удалять карточки других пользователей');
+      } else {
+        card.remove().then((deletedCard) => res.send(deletedCard));
+      }
     })
-    .catch((err) => {
-      res.status(404).send({ message: err.message });
-    });
+    .catch(next);
 });
